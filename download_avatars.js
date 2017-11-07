@@ -1,20 +1,41 @@
 require('dotenv').config();
-var request = require('request');
-var fs = require('fs');
+const request = require('request');
+const fs = require('fs');
+const functions = require('./functions');
 
-var repoOwner = process.argv[2];
-var repoName = process.argv[3];
+var repoOwner = process.argv.slice(2)[0];
+var repoName = process.argv.slice(2)[1];
+
+if(!fs.existsSync("./.env")) {
+    throw("Error: Unauthorized access to the Github API. Create a .env file in the root directory of the program and add your access token.");
+  } else {
+    const envalid = require('envalid');
+    const { str } = envalid;
+
+    const env = envalid.cleanEnv(process.env, {
+      GITHUB_TOKEN: str(),
+    });
+  }
+
+console.log('Welcome to the GitHub Avatar Downloader!');
+
+  if (process.argv.slice(2).length === 2) {
+    var options = requestOptions("https://api.github.com/users/" + repoOwner);
+    request(options, function(err, response, body) {
+      var objectBody = JSON.parse(body);
+      if (!objectBody.login) {
+        console.log(err, repoOwner + "is not a valid Github username.");
+      } else {
+        getRepoContributors(repoOwner, repoName, accessAvatarData);
+      }
+    });
+  } else {
+    console.log("Error: Please only input two command line arguments. First the repository owner, second the repository name.");
+  }
 
 
 function getRepoContributors(repoOwner, repoName, cb) {
-  var options = {
-    url: "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/contributors",
-    headers: {
-    'User-Agent': 'request',
-    Authorization: "token " + process.env.GITHUB_TOKEN
-    }
-  }
-
+  var options = requestOptions("https://api.github.com/repos/" + repoOwner + "/" + repoName + "/contributors");
   request(options, function(err, res, body) {
     cb(err, body);
   });
@@ -24,26 +45,35 @@ function getRepoContributors(repoOwner, repoName, cb) {
 
 function accessAvatarData(err, body) {
   var objectBody = JSON.parse(body);
-  objectBody.forEach((object) => {
-    downloadImageByURL(object.avatar_url, "./avatars/" + object.login + ".jpg");
-    console.log(object.avatar_url);
-  });
+  if (fs.existsSync("./avatars")) {
+    objectBody.forEach((object) => {
+      downloadImageByURL(object.avatar_url, "./avatars/" + object.login + ".jpg");
+      console.log(object.avatar_url);
+    });
+  } else {
+    console.log("Error: No destination directory found. Please make an empty 'avatars' directory in the program's root folder.");
+  }
 }
 
 // Makes a request to a url and pipes a read stream to a write stream to a specified filePath.
 
 function downloadImageByURL(url, filePath) {
   request.get(url)
-  .on('error', function(err) {
+    .on('error', function(err) {
     throw err;
-  })
-  .pipe(fs.createWriteStream(filePath));
+    })
+    .pipe(fs.createWriteStream(filePath));
 }
 
-console.log('Welcome to the GitHub Avatar Downloader!');
+function requestOptions(queryUrl) {
+    var options = {
+      url: queryUrl,
+      headers: {
+        'User-Agent': 'request',
+        Authorization: "token " + process.env.GITHUB_TOKEN
+      }
+    }
+    return options;
+  }
 
-if (repoOwner && repoName) {
-  getRepoContributors(repoOwner, repoName, accessAvatarData);
-} else {
-  console.log("Error: Please input two arguments after running download_avatars.js.");
-}
+

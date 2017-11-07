@@ -19,6 +19,7 @@
   "homepage": "https://github.com/emaxet/github-avatar-downloader#readme",
   "dependencies": {
     "dotenv": "^4.0.0",
+    "envalid": "^4.1.1",
     "request": "^2.83.0"
   }
 }
