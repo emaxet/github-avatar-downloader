@@ -58,4 +58,4 @@ typings/
 .env
 
 # Access codes/passwords
-secrets.js
+.env
