@@ -12,12 +12,12 @@ function getRepoContributors(repoOwner, repoName, cb) {
     url: "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/contributors",
     headers: {
     'User-Agent': 'request',
-    'auth': secret.GITHUB_TOKEN
+    Authorization: "token " + secret.GITHUB_TOKEN
     }
   }
 
-
   request(options, function(err, res, body) {
+    console.log(body);
     cb(err, body);
   });
 }
@@ -38,6 +38,8 @@ function downloadImageByURL(url, filePath) {
   .pipe(fs.createWriteStream(filePath));
 }
 
-getRepoContributors(repoOwner, repoName, logInfo);
-
-
+if (repoOwner && repoName) {
+  getRepoContributors(repoOwner, repoName, logInfo);
+} else {
+  console.log("Error: Please input two arguments after running download_avatars.js.");
+}
